@@ -1,28 +1,29 @@
 <?php
+
 /**
-* 2007-2021 PrestaShop
-*
-* NOTICE OF LICENSE
-*
-* This source file is subject to the Academic Free License (AFL 3.0)
-* that is bundled with this package in the file LICENSE.txt.
-* It is also available through the world-wide-web at this URL:
-* http://opensource.org/licenses/afl-3.0.php
-* If you did not receive a copy of the license and are unable to
-* obtain it through the world-wide-web, please send an email
-* to license@prestashop.com so we can send you a copy immediately.
-*
-* DISCLAIMER
-*
-* Do not edit or add to this file if you wish to upgrade PrestaShop to newer
-* versions in the future. If you wish to customize PrestaShop for your
-* needs please refer to http://www.prestashop.com for more information.
-*
-*  @author    PrestaShop SA <contact@prestashop.com>
-*  @copyright 2007-2021 PrestaShop SA
-*  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
-*  International Registered Trademark & Property of PrestaShop SA
-*/
+ * 2007-2021 PrestaShop
+ *
+ * NOTICE OF LICENSE
+ *
+ * This source file is subject to the Academic Free License (AFL 3.0)
+ * that is bundled with this package in the file LICENSE.txt.
+ * It is also available through the world-wide-web at this URL:
+ * http://opensource.org/licenses/afl-3.0.php
+ * If you did not receive a copy of the license and are unable to
+ * obtain it through the world-wide-web, please send an email
+ * to license@prestashop.com so we can send you a copy immediately.
+ *
+ * DISCLAIMER
+ *
+ * Do not edit or add to this file if you wish to upgrade PrestaShop to newer
+ * versions in the future. If you wish to customize PrestaShop for your
+ * needs please refer to http://www.prestashop.com for more information.
+ *
+ *  @author    PrestaShop SA <contact@prestashop.com>
+ *  @copyright 2007-2021 PrestaShop SA
+ *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
+ *  International Registered Trademark & Property of PrestaShop SA
+ */
 
 if (!defined('_PS_VERSION_')) {
     exit;
@@ -55,28 +56,29 @@ class TiphioPSPrometheus extends Module
         $this->ps_versions_compliancy = array('min' => '1.7', 'max' => _PS_VERSION_);
     }
 
-    /**
-     * Don't forget to create update methods if needed:
-     * http://doc.prestashop.com/display/PS16/Enabling+the+Auto-Update
-     */
     public function install()
     {
-        Configuration::updateValue('TIPHIOPSPROMETHEUS_LIVE_MODE', false);
-
-        include(dirname(__FILE__).'/sql/install.php');
-
-        return parent::install() &&
-            $this->registerHook('header') &&
-            $this->registerHook('backOfficeHeader');
+        return parent::install();
     }
 
     public function uninstall()
     {
-        Configuration::deleteByName('TIPHIOPSPROMETHEUS_LIVE_MODE');
-
-        include(dirname(__FILE__).'/sql/uninstall.php');
-
         return parent::uninstall();
+    }
+
+    public function handleFormSubmit()
+    {
+        $newBasicAuthUsername = Tools::getValue('TIPHIOPSPROMETHEUS_BASICAUTH_USER');
+        $newBasicAuthPassword = Tools::getValue('TIPHIOPSPROMETHEUS_BASICAUTH_PASSWORD');
+
+        if (!isset($newBasicAuthPassword) || !isset($newBasicAuthPassword)) {
+            return;
+        }
+
+        $encodedCredentials = base64_encode($newBasicAuthUsername . ':' . $newBasicAuthPassword);
+
+
+        Configuration::updateValue("TIPHIOPSPROMETHEUS_BASICAUTH_ENCODED_CREDENTIALS", $encodedCredentials);
     }
 
     /**
@@ -88,14 +90,15 @@ class TiphioPSPrometheus extends Module
          * If values have been submitted in the form, process.
          */
         if (((bool)Tools::isSubmit('submitTiphiopsprometheusModule')) == true) {
-            $this->postProcess();
+            $this->handleFormSubmit();
         }
+
 
         $this->context->smarty->assign('module_dir', $this->_path);
 
-        $output = $this->context->smarty->fetch($this->local_path.'views/templates/admin/configure.tpl');
+        $output = $this->context->smarty->fetch($this->local_path . 'views/templates/admin/configure.tpl');
 
-        return $output.$this->renderForm();
+        return $output . $this->renderForm();
     }
 
     /**
@@ -105,8 +108,6 @@ class TiphioPSPrometheus extends Module
     {
         $helper = new HelperForm();
 
-        $helper->show_toolbar = false;
-        $helper->table = $this->table;
         $helper->module = $this;
         $helper->default_form_language = $this->context->language->id;
         $helper->allow_employee_form_lang = Configuration::get('PS_BO_ALLOW_EMPLOYEE_FORM_LANG', 0);
@@ -114,11 +115,10 @@ class TiphioPSPrometheus extends Module
         $helper->identifier = $this->identifier;
         $helper->submit_action = 'submitTiphiopsprometheusModule';
         $helper->currentIndex = $this->context->link->getAdminLink('AdminModules', false)
-            .'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name;
+            . '&configure=' . $this->name . '&tab_module=' . $this->tab . '&module_name=' . $this->name;
         $helper->token = Tools::getAdminTokenLite('AdminModules');
 
         $helper->tpl_vars = array(
-            'fields_value' => $this->getConfigFormValues(), /* Add values for your inputs */
             'languages' => $this->context->controller->getLanguages(),
             'id_language' => $this->context->language->id,
         );
@@ -131,44 +131,29 @@ class TiphioPSPrometheus extends Module
      */
     protected function getConfigForm()
     {
+
         return array(
             'form' => array(
                 'legend' => array(
-                'title' => $this->l('Settings'),
-                'icon' => 'icon-cogs',
+                    'title' => $this->l('Update Basic Auth Credentials'),
+                    'icon' => 'icon-cogs',
                 ),
                 'input' => array(
                     array(
-                        'type' => 'switch',
-                        'label' => $this->l('Live mode'),
-                        'name' => 'TIPHIOPSPROMETHEUS_LIVE_MODE',
-                        'is_bool' => true,
-                        'desc' => $this->l('Use this module in live mode'),
-                        'values' => array(
-                            array(
-                                'id' => 'active_on',
-                                'value' => true,
-                                'label' => $this->l('Enabled')
-                            ),
-                            array(
-                                'id' => 'active_off',
-                                'value' => false,
-                                'label' => $this->l('Disabled')
-                            )
-                        ),
-                    ),
-                    array(
-                        'col' => 3,
+                        'col' => 6,
                         'type' => 'text',
-                        'prefix' => '<i class="icon icon-envelope"></i>',
-                        'desc' => $this->l('Enter a valid email address'),
-                        'name' => 'TIPHIOPSPROMETHEUS_ACCOUNT_EMAIL',
-                        'label' => $this->l('Email'),
+                        'prefix' => '<i class="icon icon-user"></i>',
+                        'desc' => $this->l('Username used for the basic auth to protect your metrics from outside access.'),
+                        'name' => 'TIPHIOPSPROMETHEUS_BASICAUTH_USER',
+                        'label' => $this->l('Basic Auth username'),
                     ),
                     array(
-                        'type' => 'password',
-                        'name' => 'TIPHIOPSPROMETHEUS_ACCOUNT_PASSWORD',
-                        'label' => $this->l('Password'),
+                        'col' => 6,
+                        'type' => 'text',
+                        'prefix' => '<i class="icon padlock"></i>',
+                        'desc' => $this->l('Password used for the basic auth to protect your metrics from outside access.'),
+                        'name' => 'TIPHIOPSPROMETHEUS_BASICAUTH_PASSWORD',
+                        'label' => $this->l('Basic Auth password'),
                     ),
                 ),
                 'submit' => array(
@@ -176,49 +161,5 @@ class TiphioPSPrometheus extends Module
                 ),
             ),
         );
-    }
-
-    /**
-     * Set values for the inputs.
-     */
-    protected function getConfigFormValues()
-    {
-        return array(
-            'TIPHIOPSPROMETHEUS_LIVE_MODE' => Configuration::get('TIPHIOPSPROMETHEUS_LIVE_MODE', true),
-            'TIPHIOPSPROMETHEUS_ACCOUNT_EMAIL' => Configuration::get('TIPHIOPSPROMETHEUS_ACCOUNT_EMAIL', 'contact@prestashop.com'),
-            'TIPHIOPSPROMETHEUS_ACCOUNT_PASSWORD' => Configuration::get('TIPHIOPSPROMETHEUS_ACCOUNT_PASSWORD', null),
-        );
-    }
-
-    /**
-     * Save form data.
-     */
-    protected function postProcess()
-    {
-        $form_values = $this->getConfigFormValues();
-
-        foreach (array_keys($form_values) as $key) {
-            Configuration::updateValue($key, Tools::getValue($key));
-        }
-    }
-
-    /**
-    * Add the CSS & JavaScript files you want to be loaded in the BO.
-    */
-    public function hookBackOfficeHeader()
-    {
-        if (Tools::getValue('module_name') == $this->name) {
-            $this->context->controller->addJS($this->_path.'views/js/back.js');
-            $this->context->controller->addCSS($this->_path.'views/css/back.css');
-        }
-    }
-
-    /**
-     * Add the CSS & JavaScript files you want to be added on the FO.
-     */
-    public function hookHeader()
-    {
-        $this->context->controller->addJS($this->_path.'/views/js/front.js');
-        $this->context->controller->addCSS($this->_path.'/views/css/front.css');
     }
 }

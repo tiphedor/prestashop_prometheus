@@ -23,6 +23,11 @@
 *  International Registered Trademark & Property of PrestaShop SA
 *}
 
+<div class="alert alert-success" role="alert">
+	{l s='Settings were updated successfuly.' mod='tiphiopsprometheus'}<br />
+</div>
+
+
 <div class="panel">
 	<h3><i class="icon icon-credit-card"></i> {l s='Prometheus Exporter' mod='tiphiopsprometheus'}</h3>
 	<p>
