@@ -49,8 +49,9 @@ class tiphiopsprometheusmetricsModuleFrontController extends ModuleFrontControll
     {
         $headers = getallheaders();
 
-        $authorization = $headers['authorization'];
-        if (!isset($authorization)) {
+
+        $authorization = $headers['authorization'] ?? $headers['Authorization'] ?? NULL;
+        if (empty($authorization)) {
             $this->fuckOffAndAuthenticate();
         }
 
@@ -71,6 +72,6 @@ class tiphiopsprometheusmetricsModuleFrontController extends ModuleFrontControll
 
     public function getRandomMetric()
     {
-        return "4";
+        return "14";
     }
 }

@@ -76,9 +76,9 @@ class TiphioPSPrometheus extends Module
         }
 
         $encodedCredentials = base64_encode($newBasicAuthUsername . ':' . $newBasicAuthPassword);
-
-
         Configuration::updateValue("TIPHIOPSPROMETHEUS_BASICAUTH_ENCODED_CREDENTIALS", $encodedCredentials);
+
+        $this->context->smarty->assign('form_submitted', 1);
     }
 
     /**
@@ -94,7 +94,15 @@ class TiphioPSPrometheus extends Module
         }
 
 
+        $hostnameWithPrefix = Tools::getHttpHost(true);
+        $hostname = str_replace('https://', '', $hostnameWithPrefix);
+        $scrapFullUrl = $this->context->link->getModuleLink("tiphiopsprometheus", "metrics");
+        $metricsPath = str_replace($hostnameWithPrefix, '', $scrapFullUrl);
+
         $this->context->smarty->assign('module_dir', $this->_path);
+        $this->context->smarty->assign('metrics_path', $metricsPath);
+        $this->context->smarty->assign('hostname', $hostname);
+
 
         $output = $this->context->smarty->fetch($this->local_path . 'views/templates/admin/configure.tpl');
 
